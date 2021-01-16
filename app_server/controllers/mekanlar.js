@@ -1,6 +1,6 @@
 ﻿var request = require('postman-request');
 var apiSecenekleri = {
-    sunucu: "https://sevimselinozsoy1811012058.herokuapp.com/",
+    sunucu: "https://sevimselinozsoy1811012058.herokuapp.com",
     apiYolu:'/api/mekanlar/'
 }
 
