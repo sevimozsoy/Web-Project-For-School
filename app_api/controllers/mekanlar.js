@@ -16,7 +16,8 @@ const mekanlariListele = async (req, res) => {
     var geoOptions = {
         distanceField: "mesafe",
         spherical: true,
-        key: "koordinatlar"
+        key: "koordinatlar",
+        maxDistance:20000
     };
     if (!enlem || !boylam) {
         cevapOlustur(res, 404, {
@@ -40,7 +41,7 @@ const mekanlariListele = async (req, res) => {
                 adres: mekan.adres,
                 puan: mekan.puan,
                 imkanlar: mekan.imkanlar,
-                mesafe: mekan.mesafe.toFixed() + 'm',
+                mesafe: mekan.mesafe.toFixed(),
             }
         });
 
@@ -62,12 +63,12 @@ const mekanEkle = function (req, res) {
             {
                 gunler: req.body.gunler1,
                 acilis: req.body.acilis1,
-                kapanıs: req.body.kapanis1,
+                kapanis: req.body.kapanis1,
                 kapali: req.body.kapali1
             }, {
                 gunler: req.body.gunler2,
                 acilis: req.body.acilis2,
-                kapanıs: req.body.kapanis2,
+                kapanis: req.body.kapanis2,
                 kapali: req.body.kapali2
             }]
     }, function (hata, mekan) {
