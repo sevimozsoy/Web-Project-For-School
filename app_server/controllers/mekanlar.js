@@ -1,11 +1,12 @@
 ﻿var request = require('postman-request');
 var apiSecenekleri = {
-    sunucu: "https://sevimselinozsoy1811012058.herokuapp.com",
+    sunucu: "https://sevimselinozsoy1811012058.herokuapp.com/",
     apiYolu:'/api/mekanlar/'
 }
 
-var istekSecenekleri
+
 var footer="Sevim Selin ÖZSOY"
+
 var mesafeyiFormatla = function (mesafe) {
     var yeniMesafe, birim;
     if (mesafe > 1000) {
@@ -76,28 +77,6 @@ var detaySayfasiOlustur = function (req, res, mekanDetaylari) {
         footer: footer
     });
 }
-var mekanBilgisi = function (req, res, callback) {
-    istekSecenekleri = {
-        url: apiSecenekleri.sunucu + apiSecenekleri.apiYolu + req.params.mekanid,
-        method: "GET",
-        json: {}
-    };
-    request(
-        istekSecenekleri,
-        function (hata, cevap, mekanDetaylari) {
-            var gelenMekan = mekanDetaylari;
-            if (cevap.statusCode == 200) {
-                gelenMekan.koordinatlar = {
-                    enlem: mekanDetaylari.koordinatlar[0],
-                    boylam: mekanDetaylari.koordinatlar[1]
-                };
-                detaySayfasiOlustur(req, res, gelenMekan);
-            } else {
-                hataGoster(req, res, cevap.statusCode);
-            }
-        }
-    );
-}
 
 var hataGoster = function (req, res, durum) {
     var baslik, icerik;
@@ -115,10 +94,92 @@ var hataGoster = function (req, res, durum) {
     });
 };
 
+var mekanBilgisiGetir = function (req, res, callback) {
+    var istekSecenekleri
+    istekSecenekleri = {
+        url: apiSecenekleri.sunucu + apiSecenekleri.apiYolu + req.params.mekanid,
+        method: "GET",
+        json: {}
+    };
+    request(
+        istekSecenekleri,
+        function (hata, cevap, mekanDetaylari) {
+            var gelenMekan = mekanDetaylari;
+            if (cevap.statusCode == 200) {
+                gelenMekan.koordinatlar = {
+                    enlem: mekanDetaylari.koordinatlar[0],
+                    boylam: mekanDetaylari.koordinatlar[1]
+                };
+                callback(req, res, gelenMekan);
+            } else {
+                hataGoster(req, res, cevap.statusCode);
+            }
+        }
+    );
+}
 
-
-const yorumEkle = function (req, res) {
-    res.render('yorum-ekle', { title: 'Yorum Ekle' });
+const mekanBilgisi = function (req, res, callback) {
+    mekanBilgisiGetir(req, res, function (req, res, cevap) {
+        detaySayfasiOlustur(req, res, cevap);
+    });
 };
 
-module.exports = { mesafeyiFormatla, anaSayfaOlustur, anaSayfa,detaySayfasiOlustur ,mekanBilgisi,hataGoster,yorumEkle };
+var yorumSayfasiOlustur = function (req, res, mekanBilgisi) {
+    res.render('yorum-ekle', { baslik: mekanBilgisi.ad + ' Mekanına Yorum Ekle',
+        sayfaBaslik: mekanBilgisi.ad + ' Mekanına Yorum Ekle',
+        hata: req.query.hata,
+        footer: footer
+    });
+};
+
+const yorumEkle = function (req, res) {
+    mekanBilgisiGetir(req, res, function (req, res, cevap) {
+        yorumSayfasiOlustur(req, res, cevap);
+    });
+};
+
+const yorumumuEkle = function (req, res) {
+    var istekSecenekleri, gonderilenYorum, mekanid;
+    mekanid = req.params.mekanid;
+    gonderilenYorum = {
+        yorumYapan: req.body.name,
+        puan: parseInt(req.body.rating, 10),
+        yorumMetni: req.body.review
+    };
+    istekSecenekleri = {
+        url: apiSecenekleri.sunucu + apiSecenekleri.apiYolu + mekanid + '/yorumlar',
+        method: "POST",
+        json: gonderilenYorum
+    };
+    if (!gonderilenYorum.yorumYapan || !gonderilenYorum.puan || !gonderilenYorum.yorumMetni) {
+        res.redirect('/mekan/' + mekanid + '/yorum/yeni?hata=evet');
+    } else {
+        request(
+            istekSecenekleri,
+            function (hata, cevap, body) {
+                if (cevap.statusCode === 201) {
+                    res.redirect('/mekan/' + mekanid);
+                } else if (cevap.statusCode === 400 && body.name && body.name === "ValidationError") {
+                    res.redirect('/mekan/' + mekanid + '/yorum/yeni?hata=evet');
+                } else {
+                    hataGoster(req, res, cevap.statusCode);
+                }
+            }
+
+        );
+    }
+
+};
+
+module.exports = {
+    mesafeyiFormatla,
+    anaSayfaOlustur,
+    anaSayfa,
+    detaySayfasiOlustur,
+    mekanBilgisiGetir,
+    mekanBilgisi,
+    hataGoster,
+    yorumEkle,
+    yorumSayfasiOlustur,
+    yorumumuEkle
+};
